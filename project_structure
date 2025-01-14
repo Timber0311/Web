@@ -1,0 +1,29 @@
+learning_platform/
+├── app/
+│   ├── __init__.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── user.py
+│   │   ├── resource.py
+│   │   ├── comment.py
+│   │   └── category.py
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   ├── resource.py
+│   │   ├── user.py
+│   │   └── main.py
+│   ├── static/
+│   ├── templates/
+│   │   ├── auth/
+│   │   ├── resource/
+│   │   ├── user/
+│   │   └── main/
+│   └── init_db.py
+├── uploads/
+├── config.py
+├── manage.py
+├── requirements.txt
+├── run.py
+├── start.sh
+└── .gitignore 

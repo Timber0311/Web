@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-3">
+            <h3>分类</h3>
+            <div class="list-group">
+                <a href="{{ url_for('resource.list') }}" 
+                   class="list-group-item list-group-item-action {% if not request.args.get('category_id') %}active{% endif %}">
+                    全部
+                </a>
+                {% for category in categories %}
+                <a href="{{ url_for('resource.list', category_id=category.id) }}" 
+                   class="list-group-item list-group-item-action {% if request.args.get('category_id')|int == category.id %}active{% endif %}">
+                    {{ category.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2>资源列表</h2>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('resource.upload') }}" class="btn btn-primary">上传资源</a>
+                {% endif %}
+            </div>
+            
+            <div class="row">
+                {% for resource in resources.items %}
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                {{ resource.title }}
+                                {% if resource.status == 'approved' %}
+                                    <span class="badge badge-success">已通过</span>
+                                {% elif resource.status == 'rejected' %}
+                                    <span class="badge badge-danger">已拒绝</span>
+                                {% else %}
+                                    <span class="badge badge-warning">审核中</span>
+                                {% endif %}
+                            </h5>
+                            <p class="card-text">{{ resource.description[:100] }}...</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">下载次数：{{ resource.download_count }}</small>
+                                <small class="text-muted">积分：{{ resource.points_required }}</small>
+                            </div>
+                            <a href="{{ url_for('resource.detail', id=resource.id) }}" class="btn btn-sm btn-primary mt-2">查看详情</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    {% for page in resources.iter_pages() %}
+                        {% if page %}
+                            <li class="page-item {% if page == resources.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('resource.list', page=page, category_id=request.args.get('category_id')) }}">
+                                    {{ page }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+{% endblock %} 

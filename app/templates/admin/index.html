@@ -1,0 +1,85 @@
+{% extends "admin/layout.html" %}
+
+{% block admin_content %}
+<div class="jumbotron">
+    <h1 class="display-4">管理后台</h1>
+    <p class="lead">欢迎使用管理后台</p>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">总用户数</h5>
+                <p class="card-text display-4">{{ stats.user_count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">总资源数</h5>
+                <p class="card-text display-4">{{ stats.resource_count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5 class="card-title">今日上传</h5>
+                <p class="card-text display-4">{{ stats.today_upload }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title">待审核</h5>
+                <p class="card-text display-4">{{ stats.pending_count }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">最新资源</h5>
+                <div class="list-group">
+                    {% for resource in latest_resources %}
+                    <a href="{{ url_for('resource.detail', id=resource.id) }}" 
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ resource.title }}</h6>
+                            <small>{{ resource.created_at.strftime('%Y-%m-%d') }}</small>
+                        </div>
+                        <small>上传者：{{ resource.user.username }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">热门资源</h5>
+                <div class="list-group">
+                    {% for resource in popular_resources %}
+                    <a href="{{ url_for('resource.detail', id=resource.id) }}" 
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ resource.title }}</h6>
+                            <small>下载次数：{{ resource.download_count }}</small>
+                        </div>
+                        <small>上传者：{{ resource.user.username }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

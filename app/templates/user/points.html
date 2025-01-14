@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block styles %}
+{{ super() }}
+<style>
+.points-header {
+    background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    color: white;
+}
+
+.points-card {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+.points-value {
+    font-size: 3rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1;
+}
+
+.points-label {
+    font-size: 1rem;
+    opacity: 0.8;
+    margin-top: 0.5rem;
+}
+
+.record-item {
+    border: none;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+    background: #f8f9fa;
+}
+
+.record-item:hover {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.amount-badge {
+    font-size: 1rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+}
+
+.amount-positive {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.amount-negative {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.record-time {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.record-reason {
+    color: #495057;
+    margin: 0.5rem 0;
+}
+
+.resource-link {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 0.875rem;
+}
+
+.resource-link:hover {
+    text-decoration: underline;
+}
+
+.pagination {
+    margin-top: 2rem;
+}
+
+.page-link {
+    border: none;
+    margin: 0 0.2rem;
+    border-radius: 4px;
+}
+
+.page-item.active .page-link {
+    background: #007bff;
+    border-color: #007bff;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 积分头部 -->
+<div class="points-header">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="points-card">
+                    <p class="points-value">{{ current_user.points }}</p>
+                    <p class="points-label">我的积分</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title mb-4">
+                <i class="fas fa-history"></i> 积分记录
+            </h5>
+            
+            {% if records.items %}
+                {% for record in records.items %}
+                <div class="record-item p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="amount-badge {% if record.amount > 0 %}amount-positive{% else %}amount-negative{% endif %}">
+                            {% if record.amount > 0 %}+{% endif %}{{ record.amount }}
+                        </span>
+                        <span class="record-time">
+                            {{ record.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        </span>
+                    </div>
+                    
+                    <p class="record-reason">{{ record.reason }}</p>
+                    
+                    {% if record.related_resource %}
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-link text-muted mr-2"></i>
+                        <a href="{{ url_for('resource.detail', id=record.related_resource.id) }}" 
+                           class="resource-link">
+                            {{ record.related_resource.title }}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                
+                <!-- 分页 -->
+                {% if records.pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item {% if not records.has_prev %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('user.points', page=records.prev_num) if records.has_prev else '#' }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        
+                        {% for page in records.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+                            {% if page %}
+                                <li class="page-item {% if page == records.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('user.points', page=page) }}">{{ page }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <li class="page-item {% if not records.has_next %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('user.points', page=records.next_num) if records.has_next else '#' }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-coins fa-3x mb-3"></i>
+                    <p>暂无积分记录</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

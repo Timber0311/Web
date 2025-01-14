@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- 顶部横幅 -->
+<div class="jumbotron jumbotron-fluid bg-primary text-white">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h1 class="display-4 mb-3 animate-title">校园学习资源分享平台</h1>
+            <p class="lead animate-subtitle">分享知识，共同进步</p>
+        </div>
+        <form class="form-inline my-4" action="{{ url_for('resource.search') }}" method="get">
+            <div class="input-group w-100">
+                <input class="form-control form-control-lg" type="search" name="q" placeholder="搜索资源...">
+                <div class="input-group-append">
+                    <button class="btn btn-light btn-lg" type="submit">
+                        <i class="fas fa-search"></i> 搜索
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="container">
+    <!-- 分类导航 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">资源分类</h5>
+                    <div class="row">
+                        {% for category in categories %}
+                        <div class="col-md-3 col-6 mb-2">
+                            <a href="{{ url_for('resource.list', category_id=category.id) }}" 
+                               class="btn btn-outline-primary btn-block">
+                                {{ category.name }}
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 热门资源和最新资源 -->
+    <div class="row">
+        <!-- 最新上传 -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">最新上传</h5>
+                        <a href="{{ url_for('resource.list') }}" class="btn btn-sm btn-link">查看更多</a>
+                    </div>
+                    <div class="list-group">
+                        {% for resource in latest_resources %}
+                        <a href="{{ url_for('resource.detail', id=resource.id) }}" 
+                           class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ resource.title }}</h6>
+                                <small class="text-muted">{{ resource.created_at.strftime('%Y-%m-%d') }}</small>
+                            </div>
+                            <p class="mb-1 text-muted small">{{ resource.description[:100] }}...</p>
+                            <small>
+                                <span class="badge badge-primary">{{ resource.category.name }}</span>
+                                <span class="text-muted ml-2">
+                                    <i class="fas fa-download"></i> {{ resource.download_count }}
+                                </span>
+                                <span class="text-muted ml-2">
+                                    <i class="fas fa-star"></i> {{ resource.points_required }}积分
+                                </span>
+                            </small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 侧边栏 -->
+        <div class="col-md-4">
+            <!-- 热门下载 -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">热门下载</h5>
+                    <div class="list-group list-group-flush">
+                        {% for resource in popular_resources %}
+                        <a href="{{ url_for('resource.detail', id=resource.id) }}" 
+                           class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ resource.title }}</h6>
+                                <small class="text-muted">
+                                    <i class="fas fa-download"></i> {{ resource.download_count }}
+                                </small>
+                            </div>
+                            <small class="text-muted">
+                                <span class="badge badge-primary">{{ resource.category.name }}</span>
+                            </small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 活跃用户 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users text-primary"></i> 活跃用户
+                    </h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for user, upload_count, total_downloads in active_users %}
+                    <a href="{{ url_for('user.profile', id=user.id) }}" 
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ user.username }}</h6>
+                                <small class="text-muted">
+                                    上传: {{ upload_count }} | 总下载: {{ total_downloads }}
+                                </small>
+                            </div>
+                            <span class="badge badge-primary badge-pill">
+                                {{ loop.index }}
+                            </span>
+                        </div>
+                    </a>
+                    {% else %}
+                    <div class="list-group-item">
+                        <p class="text-muted mb-0">暂无活跃用户</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+<style>
+.jumbotron {
+    background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
+    padding: 4rem 2rem;
+    margin-bottom: 2rem;
+    border-radius: 0;
+}
+
+.animate-title {
+    opacity: 0;
+    transform: translateY(-20px);
+    animation: fadeInDown 1s ease forwards;
+}
+
+.animate-subtitle {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 1s ease 0.5s forwards;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.display-4 {
+    font-weight: 600;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.lead {
+    font-size: 1.5rem;
+    font-weight: 300;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 1.5rem;
+}
+
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.badge {
+    padding: 0.4em 0.6em;
+}
+
+.btn-outline-primary {
+    border-width: 2px;
+}
+
+.btn-outline-primary:hover {
+    background-color: #007bff;
+    color: white;
+}
+</style>
+{% endblock %} 

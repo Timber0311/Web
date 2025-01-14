@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- 左侧用户信息 -->
+        <div class="col-md-3">
+            <!-- 用户基本信息卡片 -->
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-circle fa-5x text-primary mb-3"></i>
+                    <h5 class="card-title mb-3">{{ current_user.username }}</h5>
+                    <div class="mb-3">
+                        <span class="badge badge-primary">
+                            <i class="fas fa-coins"></i> 积分: {{ current_user.points }}
+                        </span>
+                    </div>
+                    {% if current_user.can_checkin() %}
+                    <form action="{{ url_for('user.checkin') }}" method="POST">
+                        <button type="submit" class="btn btn-outline-primary btn-block">
+                            <i class="fas fa-calendar-check"></i> 每日签到
+                        </button>
+                    </form>
+                    {% else %}
+                    <button class="btn btn-outline-secondary btn-block" disabled>
+                        <i class="fas fa-check"></i> 今日已签到
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 快捷操作卡片 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-tools"></i> 快捷操作
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('resource.upload') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-upload"></i> 上传资源
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" data-toggle="modal" data-target="#changePasswordModal">
+                        <i class="fas fa-key"></i> 修改密码
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧内容区 -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#uploads" data-toggle="tab">
+                                <i class="fas fa-upload"></i> 我的上传
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#favorites" data-toggle="tab">
+                                <i class="fas fa-heart"></i> 我的收藏
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#downloads" data-toggle="tab">
+                                <i class="fas fa-download"></i> 我的下载
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#points" data-toggle="tab">
+                                <i class="fas fa-coins"></i> 积分记录
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="card-body">
+                    <div class="tab-content">
+                        <!-- 我的上传 -->
+                        <div class="tab-pane fade show active" id="uploads">
+                            {% if uploads.items %}
+                            <div class="list-group">
+                                {% for resource in uploads.items %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-1">
+                                                <a href="{{ url_for('resource.detail', id=resource.id) }}">{{ resource.title }}</a>
+                                                {% if resource.status == 'pending' %}
+                                                <span class="badge badge-warning">审核中</span>
+                                                {% elif resource.status == 'rejected' %}
+                                                <span class="badge badge-danger">未通过</span>
+                                                {% endif %}
+                                            </h5>
+                                            <small class="text-muted">
+                                                上传时间: {{ resource.created_at.strftime('%Y-%m-%d %H:%M') }} |
+                                                下载: {{ resource.download_count }} 次 |
+                                                积分: {{ resource.points_required }}
+                                            </small>
+                                        </div>
+                                        <a href="{{ url_for('resource.download', id=resource.id) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-download"></i> 下载
+                                        </a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <p class="text-muted">暂无上传的资源</p>
+                                <a href="{{ url_for('resource.upload') }}" class="btn btn-primary">
+                                    <i class="fas fa-upload"></i> 上传资源
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 我的收藏 -->
+                        <div class="tab-pane fade" id="favorites">
+                            {% if favorites.items %}
+                            <div class="list-group">
+                                {% for favorite in favorites.items %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-1">
+                                                <a href="{{ url_for('resource.detail', id=favorite.resource.id) }}">
+                                                    {{ favorite.resource.title }}
+                                                </a>
+                                            </h5>
+                                            <small class="text-muted">
+                                                收藏时间: {{ favorite.created_at.strftime('%Y-%m-%d %H:%M') }} |
+                                                所需积分: {{ favorite.resource.points_required }}
+                                            </small>
+                                        </div>
+                                        <div>
+                                            {% if current_user.id == favorite.resource.user_id or current_user.downloads.filter_by(resource_id=favorite.resource.id).first() %}
+                                            <a href="{{ url_for('resource.download', id=favorite.resource.id) }}" 
+                                               class="btn btn-sm btn-primary">
+                                                <i class="fas fa-download"></i> 下载
+                                            </a>
+                                            {% elif current_user.points >= favorite.resource.points_required %}
+                                            <a href="{{ url_for('resource.download', id=favorite.resource.id) }}" 
+                                               class="btn btn-sm btn-primary">
+                                                <i class="fas fa-download"></i> 下载 (-{{ favorite.resource.points_required }}积分)
+                                            </a>
+                                            {% else %}
+                                            <button class="btn btn-sm btn-secondary" disabled title="积分不足">
+                                                <i class="fas fa-lock"></i> 积分不足
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <p class="text-muted">暂无收藏的资源</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 我的下载 -->
+                        <div class="tab-pane fade" id="downloads">
+                            {% if downloads.items %}
+                            <div class="list-group">
+                                {% for download in downloads.items %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-1">
+                                                <a href="{{ url_for('resource.detail', id=download.resource.id) }}">
+                                                    {{ download.resource.title }}
+                                                </a>
+                                            </h5>
+                                            <small class="text-muted">
+                                                下载时间: {{ download.created_at.strftime('%Y-%m-%d %H:%M') }} |
+                                                所需积分: {{ download.resource.points_required }}
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <a href="{{ url_for('resource.download', id=download.resource.id) }}" 
+                                               class="btn btn-sm btn-primary">
+                                                <i class="fas fa-download"></i> 重新下载
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <p class="text-muted">暂无下载记录</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 积分记录 -->
+                        <div class="tab-pane fade" id="points">
+                            {% if point_records.items %}
+                            <div class="list-group">
+                                {% for record in point_records.items %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-1">{{ record.reason }}</h5>
+                                            <small class="text-muted">
+                                                时间: {{ record.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                            </small>
+                                        </div>
+                                        <span class="badge {% if record.amount > 0 %}badge-success{% else %}badge-danger{% endif %} badge-pill">
+                                            {{ record.amount }}
+                                        </span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <p class="text-muted">暂无积分记录</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 修改密码模态框 -->
+<div class="modal fade" id="changePasswordModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-key"></i> 修改密码
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="changePasswordForm" onsubmit="return handlePasswordChange(event)">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 密码长度至少8位，建议使用字母、数字和符号的组合
+                    </div>
+                    
+                    <!-- 当前密码 -->
+                    <div class="form-group">
+                        <label>当前密码</label>
+                        <div class="input-group">
+                            <input type="password" 
+                                   class="form-control" 
+                                   name="current_password" 
+                                   required>
+                            <div class="input-group-append">
+                                <button type="button" 
+                                        class="btn btn-outline-secondary toggle-password"
+                                        tabindex="-1">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 新密码 -->
+                    <div class="form-group">
+                        <label>新密码</label>
+                        <div class="input-group">
+                            <input type="password" 
+                                   class="form-control" 
+                                   name="new_password"
+                                   required>
+                            <div class="input-group-append">
+                                <button type="button" 
+                                        class="btn btn-outline-secondary toggle-password"
+                                        tabindex="-1">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 确认新密码 -->
+                    <div class="form-group mb-0">
+                        <label>确认新密码</label>
+                        <div class="input-group">
+                            <input type="password" 
+                                   class="form-control" 
+                                   name="confirm_password"
+                                   required>
+                            <div class="input-group-append">
+                                <button type="button" 
+                                        class="btn btn-outline-secondary toggle-password"
+                                        tabindex="-1">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> 保存修改
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+{{ super() }}
+<script>
+// 处理密码修改
+async function handlePasswordChange(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch("{{ url_for('user.change_password') }}", {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // 显示成功消息
+            alert(result.message);
+            // 关闭模态框
+            $('#changePasswordModal').modal('hide');
+            // 重定向到登录页
+            window.location.href = "{{ url_for('auth.logout') }}";
+        } else {
+            alert(result.message);
+        }
+    } catch (error) {
+        alert('修改密码失败，请稍后重试');
+    }
+    
+    return false;
+}
+
+// 密码显示切换
+document.querySelectorAll('.toggle-password').forEach(button => {
+    button.addEventListener('click', function() {
+        const input = this.parentElement.previousElementSibling;
+        const icon = this.querySelector('i');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+});
+
+// 清空表单
+$('#changePasswordModal').on('hidden.bs.modal', function() {
+    document.getElementById('changePasswordForm').reset();
+    // 重置所有密码输入为隐藏状态
+    document.querySelectorAll('input[type="text"]').forEach(input => {
+        input.type = 'password';
+    });
+    // 重置所有眼睛图标
+    document.querySelectorAll('.toggle-password i').forEach(icon => {
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

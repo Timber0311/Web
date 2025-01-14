@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="text-center mb-0">上传资源</h4>
+                    <p class="text-center text-muted small mb-0 mt-2">分享你的知识，帮助他人成长</p>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                        <div class="form-group">
+                            <label for="title">资源标题 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="description">资源描述 <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required 
+                                    placeholder="请详细描述资源的内容、用途等信息"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="category">选择分类 <span class="text-danger">*</span></label>
+                            <select class="form-control" id="category" name="category" required>
+                                <option value="">请选择分类</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="points">下载所需积分</label>
+                            <input type="number" class="form-control" id="points" name="points" value="0" min="0">
+                            <small class="text-muted">设置为0表示免费下载</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>选择文件 <span class="text-danger">*</span></label>
+                            <div class="drop-zone text-center p-4" id="dropZone">
+                                <input type="file" class="d-none" id="file" name="file" multiple required>
+                                <div id="uploadPrompt">
+                                    <i class="fas fa-cloud-upload-alt fa-2x text-primary mb-2"></i>
+                                    <p class="mb-1">点击或拖拽文件到此处上传</p>
+                                    <small class="text-muted d-block">支持批量上传，单个文件最大100MB</small>
+                                </div>
+                                <div id="fileList" class="mt-3 text-left"></div>
+                            </div>
+                        </div>
+
+                        <div class="supported-files mt-3">
+                            <div class="file-types-info text-muted">
+                                <small>
+                                    <i class="fas fa-info-circle"></i>
+                                    单个文件大小不超过100MB，支持批量上传
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-upload mr-2"></i>上传资源
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.drop-zone {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-height: 200px;
+}
+
+.drop-zone:hover, .drop-zone.dragover {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.selected-file {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 4px;
+    margin-bottom: 5px;
+}
+
+.selected-file .file-name {
+    flex: 1;
+    margin: 0 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.selected-file .remove-file {
+    color: #dc3545;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.selected-file .remove-file:hover {
+    opacity: 1;
+}
+
+.file-types-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.file-types-info i {
+    color: #007bff;
+}
+</style>
+
+<script>
+function updateFileList(files) {
+    const fileList = document.getElementById('fileList');
+    const uploadPrompt = document.getElementById('uploadPrompt');
+    fileList.innerHTML = '';
+    
+    if (files.length > 0) {
+        uploadPrompt.style.display = 'none';
+        Array.from(files).forEach((file, index) => {
+            const fileDiv = document.createElement('div');
+            fileDiv.className = 'selected-file';
+            fileDiv.innerHTML = `
+                <i class="fas fa-file text-primary"></i>
+                <span class="file-name">${file.name}</span>
+                <i class="fas fa-times remove-file" onclick="removeFile(${index})"></i>
+            `;
+            fileList.appendChild(fileDiv);
+        });
+    } else {
+        uploadPrompt.style.display = 'block';
+    }
+}
+
+function removeFile(index) {
+    const fileInput = document.getElementById('file');
+    const dt = new DataTransfer();
+    const { files } = fileInput;
+    
+    for (let i = 0; i < files.length; i++) {
+        if (i !== index) {
+            dt.items.add(files[i]);
+        }
+    }
+    
+    fileInput.files = dt.files;
+    updateFileList(fileInput.files);
+}
+
+// 点击上传区域触发文件选择
+document.getElementById('dropZone').addEventListener('click', function(e) {
+    if (!e.target.classList.contains('remove-file')) {
+        document.getElementById('file').click();
+    }
+});
+
+// 文件选择处理
+document.getElementById('file').addEventListener('change', function(e) {
+    updateFileList(e.target.files);
+});
+
+// 拖拽处理
+const dropZone = document.getElementById('dropZone');
+
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    });
+});
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, function() {
+        dropZone.classList.add('dragover');
+    });
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, function() {
+        dropZone.classList.remove('dragover');
+    });
+});
+
+dropZone.addEventListener('drop', function(e) {
+    const fileInput = document.getElementById('file');
+    const dt = new DataTransfer();
+    
+    Array.from(e.dataTransfer.files).forEach(file => {
+        dt.items.add(file);
+    });
+    
+    fileInput.files = dt.files;
+    updateFileList(fileInput.files);
+});
+
+// 表单提交验证
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    const files = document.getElementById('file').files;
+    const allowedExtensions = [
+        'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt',
+        'zip', 'rar', '7z', 'tar', 'gz',
+        'jpg', 'jpeg', 'png', 'gif',
+        'py', 'java', 'cpp', 'c', 'h', 'js', 'css', 'html',
+        'sql', 'json', 'xml', 'csv'
+    ];
+    
+    for (let file of files) {
+        const extension = file.name.split('.').pop().toLowerCase();
+        if (!allowedExtensions.includes(extension)) {
+            e.preventDefault();
+            alert(`文件 "${file.name}" 格式不支持！请选择支持的文件类型上传。`);
+            break;
+        }
+    }
+});
+</script>
+{% endblock %} 

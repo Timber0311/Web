@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block styles %}
+{{ super() }}
+<style>
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.form-control {
+    border-radius: 5px;
+    border: 1px solid #ced4da;
+}
+
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+.btn-primary {
+    border-radius: 5px;
+    padding: 12px;
+}
+
+.password-strength {
+    height: 4px;
+    border-radius: 2px;
+    margin-top: 5px;
+    transition: all 0.3s ease;
+}
+
+.strength-weak {
+    background: #dc3545;
+    width: 30%;
+}
+
+.strength-medium {
+    background: #ffc107;
+    width: 60%;
+}
+
+.strength-strong {
+    background: #28a745;
+    width: 100%;
+}
+
+.invalid-feedback {
+    color: #dc3545;
+    font-size: 80%;
+    margin-top: 0.25rem;
+}
+
+.is-invalid {
+    border-color: #dc3545 !important;
+}
+
+.is-invalid:focus {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220,53,69,.25) !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-5">
+                    <h2 class="text-center mb-4">
+                        <i class="fas fa-user-plus fa-2x text-primary mb-3 d-block"></i>
+                        创建账号
+                    </h2>
+
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            {% for message in messages %}
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for('auth.register') }}" id="registerForm">
+                        <div class="form-group">
+                            <label for="email">
+                                <i class="fas fa-envelope text-muted"></i> 邮箱
+                            </label>
+                            <input type="email" 
+                                   class="form-control form-control-lg" 
+                                   id="email" 
+                                   name="email" 
+                                   required 
+                                   autofocus>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="username">
+                                <i class="fas fa-user text-muted"></i> 用户名
+                            </label>
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   id="username" 
+                                   name="username" 
+                                   required
+                                   minlength="2">
+                            <small id="usernameHelpText" class="form-text text-muted">
+                                用户名至少包含2个字符
+                            </small>
+                            <div id="usernameError" class="invalid-feedback" style="display: none;">
+                                用户名长度必须至少为2位
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">
+                                <i class="fas fa-lock text-muted"></i> 密码
+                            </label>
+                            <div class="input-group">
+                                <input type="password" 
+                                       class="form-control form-control-lg" 
+                                       id="password" 
+                                       name="password" 
+                                       required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" 
+                                            type="button" 
+                                            onclick="togglePassword()">
+                                        <i class="fas fa-eye" id="toggleIcon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="password-strength" id="passwordStrength"></div>
+                            <small id="passwordHelpText" class="form-text text-muted">
+                                密码至少包含8个字符
+                            </small>
+                            <div id="passwordError" class="invalid-feedback" style="display: none;">
+                                密码长度必须至少为8位
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg btn-block mt-4">
+                            <i class="fas fa-user-plus"></i> 注册
+                        </button>
+
+                        <div class="text-center mt-4">
+                            <p class="mb-0">已有账号？ 
+                                <a href="{{ url_for('auth.login') }}" class="text-primary">
+                                    立即登录
+                                </a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+{{ super() }}
+<script>
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const toggleIcon = document.getElementById('toggleIcon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
+    }
+}
+
+// 密码强度检测
+document.getElementById('password').addEventListener('input', function(e) {
+    const password = e.target.value;
+    const strengthBar = document.getElementById('passwordStrength');
+    const submitButton = document.querySelector('button[type="submit"]');
+    const passwordInput = document.getElementById('password');
+    const passwordError = document.getElementById('passwordError');
+    const passwordHelpText = document.getElementById('passwordHelpText');
+    
+    // 检查密码长度
+    if (password.length < 8) {
+        submitButton.disabled = true;
+        passwordInput.classList.add('is-invalid');
+        passwordError.style.display = 'block';
+        passwordHelpText.style.display = 'none';
+    } else {
+        submitButton.disabled = false;
+        passwordInput.classList.remove('is-invalid');
+        passwordError.style.display = 'none';
+        passwordHelpText.style.display = 'block';
+    }
+    
+    // 简单的密码强度检测规则
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSymbol = /[!@#$%^&*]/.test(password);
+    const isLongEnough = password.length >= 8;
+    
+    let strength = 0;
+    if (hasLetter) strength++;
+    if (hasNumber) strength++;
+    if (hasSymbol) strength++;
+    if (isLongEnough) strength++;
+    
+    // 更新强度条和提示文本
+    strengthBar.className = 'password-strength';
+    if (password.length === 0) {
+        strengthBar.style.width = '0';
+        passwordHelpText.textContent = '密码至少包含8个字符';
+    } else if (strength <= 2) {
+        strengthBar.classList.add('strength-weak');
+        passwordHelpText.textContent = '密码强度：弱';
+    } else if (strength === 3) {
+        strengthBar.classList.add('strength-medium');
+        passwordHelpText.textContent = '密码强度：中';
+    } else {
+        strengthBar.classList.add('strength-strong');
+        passwordHelpText.textContent = '密码强度：强';
+    }
+});
+
+// 添加用户名验证
+document.getElementById('username').addEventListener('input', function(e) {
+    const username = e.target.value;
+    const usernameInput = document.getElementById('username');
+    const usernameError = document.getElementById('usernameError');
+    const usernameHelpText = document.getElementById('usernameHelpText');
+    const submitButton = document.querySelector('button[type="submit"]');
+    
+    if (username.length < 2) {
+        submitButton.disabled = true;
+        usernameInput.classList.add('is-invalid');
+        usernameError.style.display = 'block';
+        usernameHelpText.style.display = 'none';
+    } else {
+        submitButton.disabled = false;
+        usernameInput.classList.remove('is-invalid');
+        usernameError.style.display = 'none';
+        usernameHelpText.style.display = 'block';
+    }
+});
+
+// 修改表单提交验证
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+    const password = document.getElementById('password').value;
+    const username = document.getElementById('username').value;
+    const passwordInput = document.getElementById('password');
+    const usernameInput = document.getElementById('username');
+    const passwordError = document.getElementById('passwordError');
+    const usernameError = document.getElementById('usernameError');
+    
+    let isValid = true;
+    
+    if (password.length < 8) {
+        passwordInput.classList.add('is-invalid');
+        passwordError.style.display = 'block';
+        passwordInput.focus();
+        isValid = false;
+    }
+    
+    if (username.length < 2) {
+        usernameInput.classList.add('is-invalid');
+        usernameError.style.display = 'block';
+        if (isValid) {
+            usernameInput.focus();
+        }
+        isValid = false;
+    }
+    
+    if (!isValid) {
+        e.preventDefault();
+        return false;
+    }
+    
+    return true;
+});
+</script>
+{% endblock %}
+{% endblock %} 

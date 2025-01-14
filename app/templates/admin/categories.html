@@ -1,0 +1,297 @@
+{% extends "admin/layout.html" %}
+
+{% block styles %}
+{{ super() }}
+<style>
+.category-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.category-item {
+    padding: 10px;
+    border: 1px solid #e9ecef;
+    margin-bottom: -1px;
+    background: #fff;
+    transition: background-color 0.2s;
+}
+
+.category-item:first-child {
+    border-radius: 4px 4px 0 0;
+}
+
+.category-item:last-child {
+    border-radius: 0 0 4px 4px;
+}
+
+.category-children {
+    margin-left: 30px;
+    margin-top: 10px;
+    display: none;
+    border-left: 2px solid #e9ecef;
+    padding-left: 15px;
+}
+
+.category-children.show {
+    display: block;
+}
+
+.toggle-btn {
+    cursor: pointer;
+    color: #6c757d;
+    margin-right: 10px;
+    width: 20px;
+    display: inline-block;
+    text-align: center;
+    transition: transform 0.2s;
+}
+
+.toggle-btn:hover {
+    color: #007bff;
+}
+
+.toggle-btn i {
+    transition: transform 0.2s;
+}
+
+.category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.category-info {
+    display: flex;
+    align-items: center;
+}
+
+.category-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.resource-count {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-left: 10px;
+}
+
+.category-item:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">分类管理</h1>
+    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addCategoryModal">
+        <i class="fas fa-plus"></i> 添加分类
+    </button>
+</div>
+
+<!-- 分类列表 -->
+<ul class="category-list">
+    {% for category in categories if not category.parent %}
+    <li class="category-item">
+        <div class="category-header">
+            <div class="category-info">
+                {% if category.children.count() > 0 %}
+                <span class="toggle-btn" data-target="children-{{ category.id }}">
+                    <i class="fas fa-chevron-right"></i>
+                </span>
+                {% else %}
+                <span class="toggle-btn invisible">
+                    <i class="fas fa-chevron-right"></i>
+                </span>
+                {% endif %}
+                <span>{{ category.name }}</span>
+                <span class="resource-count">({{ category.resources|length }}个资源)</span>
+            </div>
+            <div class="category-actions">
+                <button class="btn btn-sm btn-info" onclick="editCategory({{ category.id }}, '{{ category.name }}')">
+                    <i class="fas fa-edit"></i> 编辑
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteCategory({{ category.id }})">
+                    <i class="fas fa-trash"></i> 删除
+                </button>
+            </div>
+        </div>
+        {% if category.children.count() > 0 %}
+        <ul class="category-children" id="children-{{ category.id }}">
+            {% for child in category.children %}
+            <li class="category-item">
+                <div class="category-header">
+                    <div class="category-info">
+                        <span class="toggle-btn invisible">
+                            <i class="fas fa-chevron-right"></i>
+                        </span>
+                        <span>{{ child.name }}</span>
+                        <span class="resource-count">({{ child.resources|length }}个资源)</span>
+                    </div>
+                    <div class="category-actions">
+                        <button class="btn btn-sm btn-info" onclick="editCategory({{ child.id }}, '{{ child.name }}')">
+                            <i class="fas fa-edit"></i> 编辑
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCategory({{ child.id }})">
+                            <i class="fas fa-trash"></i> 删除
+                        </button>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+
+<!-- 添加分类模态框 -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加分类</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form action="{{ url_for('admin.add_category') }}" method="POST">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="name">分类名称</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="parent_id">父分类</label>
+                        <select class="form-control" id="parent_id" name="parent_id">
+                            <option value="">无</option>
+                            {% for category in categories if not category.parent %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 在添加分类模态框后添加编辑分类模态框 -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑分类</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="editCategoryForm" method="POST">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="edit_name">分类名称</label>
+                        <input type="text" class="form-control" id="edit_name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_parent_id">父分类</label>
+                        <select class="form-control" id="edit_parent_id" name="parent_id">
+                            <option value="">无</option>
+                            {% for category in categories if not category.parent %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+{{ super() }}
+<script>
+// 将脚本移到页面底部，确保DOM加载完成
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleButtons = document.querySelectorAll('.toggle-btn:not(.invisible)');
+    
+    toggleButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const targetId = this.getAttribute('data-target');
+            if (!targetId) return;
+            
+            const childrenContainer = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+            
+            // 切换显示状态
+            if (childrenContainer) {
+                childrenContainer.style.display = childrenContainer.style.display === 'none' ? 'block' : 'none';
+                
+                // 切换图标
+                if (childrenContainer.style.display === 'block') {
+                    icon.classList.remove('fa-chevron-right');
+                    icon.classList.add('fa-chevron-down');
+                } else {
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-right');
+                }
+            }
+        });
+    });
+});
+
+function editCategory(id, name, parentId = '') {
+    // 设置表单action
+    const form = document.getElementById('editCategoryForm');
+    form.action = `/admin/category/${id}/edit`;
+    
+    // 设置当前值
+    document.getElementById('edit_name').value = name;
+    
+    // 设置父分类
+    const parentSelect = document.getElementById('edit_parent_id');
+    
+    // 移除当前分类作为父分类的选项（防止自己作为自己的父分类）
+    Array.from(parentSelect.options).forEach(option => {
+        if (option.value === id.toString()) {
+            option.disabled = true;
+        } else {
+            option.disabled = false;
+        }
+    });
+    
+    // 设置当前父分类
+    if (parentId) {
+        parentSelect.value = parentId;
+    } else {
+        parentSelect.value = '';
+    }
+    
+    // 显示模态框
+    $('#editCategoryModal').modal('show');
+}
+
+function deleteCategory(id) {
+    if (confirm('确定要删除这个分类吗？删除后该分类下的资源将被移动到其他分类。')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/category/${id}/delete`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}
+{% endblock %} 

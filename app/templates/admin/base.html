@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block styles %}
+{{ super() }}
+<style>
+.admin-header {
+    background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    color: white;
+    text-align: center;
+}
+
+.admin-sidebar {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    min-height: calc(100vh - 250px);
+}
+
+.admin-sidebar .nav-link {
+    color: #495057;
+    padding: 0.8rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.admin-sidebar .nav-link:hover {
+    background: #e9ecef;
+}
+
+.admin-sidebar .nav-link.active {
+    color: #007bff;
+    background: #e7f1ff;
+}
+
+.admin-sidebar .nav-link i {
+    width: 20px;
+    margin-right: 0.5rem;
+    text-align: center;
+}
+
+.admin-content {
+    padding: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 管理后台头部 -->
+<div class="admin-header">
+    <h2 class="mb-0">管理后台</h2>
+</div>
+
+<div class="container">
+    <div class="row">
+        <!-- 左侧导航栏 -->
+        <div class="col-md-3">
+            <div class="admin-sidebar">
+                <nav class="nav flex-column">
+                    <a class="nav-link {% if request.endpoint == 'admin.index' %}active{% endif %}" 
+                       href="{{ url_for('admin.index') }}">
+                        <i class="fas fa-home"></i> 控制台
+                    </a>
+                    <a class="nav-link {% if request.endpoint == 'admin.users' %}active{% endif %}" 
+                       href="{{ url_for('admin.users') }}">
+                        <i class="fas fa-users"></i> 用户管理
+                    </a>
+                    <a class="nav-link {% if request.endpoint == 'admin.resources' %}active{% endif %}" 
+                       href="{{ url_for('admin.resources') }}">
+                        <i class="fas fa-file-alt"></i> 资源管理
+                    </a>
+                    <a class="nav-link {% if request.endpoint == 'admin.categories' %}active{% endif %}" 
+                       href="{{ url_for('admin.categories') }}">
+                        <i class="fas fa-folder"></i> 分类管理
+                    </a>
+                    <a class="nav-link {% if request.endpoint == 'admin.stats' %}active{% endif %}" 
+                       href="{{ url_for('admin.stats') }}">
+                        <i class="fas fa-chart-bar"></i> 数据统计
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- 右侧内容区域 -->
+        <div class="col-md-9">
+            <div class="admin-content">
+                {% block admin_content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    {% if not can_access %}
+    <div class="alert alert-warning">
+        此资源未通过审核，暂时无法访问。
+        {% if not current_user.is_authenticated %}
+            <a href="{{ url_for('auth.login') }}">登录</a> 后如果您是管理员或资源上传者可以查看。
+        {% endif %}
+    </div>
+    {% else %}
+    <!-- 资源详情卡片 -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">{{ resource.title }}</h4>
+            <div>
+                {% if current_user.is_authenticated %}
+                <form action="{{ url_for('resource.toggle_favorite', id=resource.id) }}" 
+                      method="POST" 
+                      style="display: inline;">
+                    <button type="submit" class="btn btn-outline-danger">
+                        {% if current_user.has_favorited(resource) %}
+                        <i class="fas fa-heart"></i> 取消收藏
+                        {% else %}
+                        <i class="far fa-heart"></i> 收藏
+                        {% endif %}
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- 资源信息 -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-user"></i> 上传者：{{ resource.user.username }}
+                    </p>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-folder"></i> 分类：{{ resource.category.name if resource.category else '无分类' }}
+                    </p>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-calendar"></i> 上传时间：{{ resource.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    </p>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-download"></i> 下载次数：{{ resource.download_count }}
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <!-- 下载按钮区域 -->
+                    <div class="text-md-right mt-3 mt-md-0">
+                        {% if can_download %}
+                            {% if current_user.is_authenticated %}
+                                {% if current_user.points >= resource.points_required or current_user.id == resource.user_id %}
+                                <a href="{{ url_for('resource.download', id=resource.id) }}" 
+                                   class="btn btn-primary btn-lg">
+                                    <i class="fas fa-download"></i> 下载文件 
+                                    {% if resource.points_required > 0 %}
+                                        (-{{ resource.points_required }}积分)
+                                    {% else %}
+                                        (免费)
+                                    {% endif %}
+                                </a>
+                                {% else %}
+                                <button class="btn btn-secondary btn-lg" disabled>
+                                    <i class="fas fa-lock"></i> 积分不足
+                                </button>
+                                <p class="text-muted mt-2">
+                                    <small>您当前积分：{{ current_user.points }}</small>
+                                </p>
+                                {% endif %}
+                            {% else %}
+                            <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt"></i> 登录后下载
+                            </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 资源描述 -->
+            {% if resource.description %}
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">资源描述</h5>
+                    <p class="card-text">{{ resource.description }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 资源状态提示 -->
+            {% if resource.status != 'approved' %}
+                <div class="alert alert-warning">
+                    此资源{{ '待审核' if resource.status == 'pending' else '未通过审核' }}
+                    {% if current_user.id == resource.user_id or current_user.is_administrator() %}
+                        （您可以查看此资源因为您是{{ '管理员' if current_user.is_administrator() else '资源上传者' }}）
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 评论区 -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">评论区</h5>
+        </div>
+        <div class="card-body">
+            {% if current_user.is_authenticated %}
+            <!-- 评论输入框 -->
+            <form action="{{ url_for('resource.comment', id=resource.id) }}" method="POST" class="mb-4">
+                <div class="form-group">
+                    <textarea class="form-control" 
+                              name="content" 
+                              rows="3" 
+                              placeholder="写下你的评论..."
+                              required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> 发表评论
+                </button>
+            </form>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 
+                请 <a href="{{ url_for('auth.login') }}">登录</a> 后发表评论
+            </div>
+            {% endif %}
+
+            <!-- 评论列表 -->
+            {% if comments.items %}
+            <div class="list-group list-group-flush">
+                {% for comment in comments.items %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <span class="font-weight-bold">{{ comment.user.username }}</span>
+                            <small class="text-muted ml-2">
+                                {{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </small>
+                        </div>
+                        {% if current_user.is_authenticated and (current_user.id == comment.user_id or current_user.is_administrator()) %}
+                        <form action="{{ url_for('resource.delete_comment', id=comment.id) }}" 
+                              method="POST"
+                              onsubmit="return confirm('确定要删除这条评论吗？');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    <p class="mb-0">{{ comment.content }}</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- 评论分页 -->
+            {% if comments.pages > 1 %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% for page in comments.iter_pages() %}
+                        {% if page %}
+                            <li class="page-item {% if page == comments.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('resource.detail', id=resource.id, page=page) }}">
+                                    {{ page }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center text-muted py-5">
+                <i class="far fa-comments fa-3x mb-3"></i>
+                <h5>暂无评论</h5>
+                <p>来发表第一条评论吧</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %} 

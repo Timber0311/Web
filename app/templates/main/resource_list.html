@@ -1,0 +1,53 @@
+{% for resource in resources.items %}
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    {{ resource.title }}
+                    {% if resource.status != 'approved' %}
+                        <span class="badge badge-warning">
+                            {% if resource.status == 'pending' %}待审核
+                            {% elif resource.status == 'review' %}待复核
+                            {% else %}已拒绝
+                            {% endif %}
+                        </span>
+                    {% endif %}
+                </h5>
+                <p class="card-text text-muted">
+                    <small>
+                        <i class="fas fa-user"></i> {{ resource.user.username }} &nbsp;
+                        <i class="fas fa-folder"></i> {{ resource.category.name if resource.category else '无分类' }} &nbsp;
+                        <i class="fas fa-calendar"></i> {{ resource.created_at.strftime('%Y-%m-%d') }}
+                    </small>
+                </p>
+                {% if resource.description %}
+                <p class="card-text">{{ resource.description|truncate(100) }}</p>
+                {% endif %}
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge badge-info">
+                            <i class="fas fa-download"></i> {{ resource.download_count }}
+                        </span>
+                        {% if resource.points_required > 0 %}
+                        <span class="badge badge-warning">
+                            <i class="fas fa-coins"></i> {{ resource.points_required }}
+                        </span>
+                        {% else %}
+                        <span class="badge badge-success">免费</span>
+                        {% endif %}
+                    </div>
+                    <a href="{{ url_for('resource.detail', id=resource.id) }}" 
+                       class="btn btn-sm btn-primary">
+                        查看详情
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="col-12">
+        <div class="alert alert-info text-center">
+            暂无资源
+        </div>
+    </div>
+{% endfor %} 
